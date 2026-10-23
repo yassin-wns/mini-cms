@@ -30,3 +30,11 @@ La page `/a-propos` affiche le nom de l'auteur, le groupe et des liens vers les 
 ## Publication
 Le dépôt distant est :
 https://github.com/yassin-wns/mini-cms
+
+## 6. Historique depuis lab-01
+
+Nombre de commits depuis lab-01 : 7
+
+Fichiers modifiés depuis lab-01 : 8
+
+Ce que `git tag -n` affiche pour lab-01 : `lab-01` — Session 01 completed
