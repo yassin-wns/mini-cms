@@ -67,4 +67,4 @@ Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l
 
 ### Page À propos
 
-![Page A propos](screenshots/s02-a-propos.png)
+![Page À propos](screenshots/s02-a-propos.png)
