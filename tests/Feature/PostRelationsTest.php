@@ -65,3 +65,29 @@ it('removes the pivot rows when a post is deleted', function () {
     $this->assertDatabaseMissing('post_tag', ['post_id' => $post->id]);
     $this->assertDatabaseHas('tags', ['id' => $tag->id]);
 });
+
+it('shows other published posts of the same category on post detail', function () {
+    $category = Category::factory()->create();
+
+    $currentPost = Post::factory()->published()->create([
+        'title' => 'Article principal',
+        'category_id' => $category->id,
+    ]);
+
+    $relatedPost = Post::factory()->published()->create([
+        'title' => 'Article connexe publie',
+        'category_id' => $category->id,
+    ]);
+
+    $draftPost = Post::factory()->create([
+        'title' => 'Article connexe brouillon',
+        'category_id' => $category->id,
+        'is_published' => false,
+    ]);
+
+    $this->get(route('posts.show', $currentPost))
+        ->assertOk()
+        ->assertSee('Dans la même catégorie')
+        ->assertSee('Article connexe publie')
+        ->assertDontSee('Article connexe brouillon');
+});
