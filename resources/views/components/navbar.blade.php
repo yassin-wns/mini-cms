@@ -6,5 +6,18 @@
         <x-nav-link to="posts.index" match="posts.*">Articles</x-nav-link>
         <x-nav-link to="time">Heure</x-nav-link>
         <x-nav-link to="about">À propos</x-nav-link>
+        @auth
+            @if (auth()->user()->isAdmin())
+                <x-nav-link to="admin.categories.index">Catégories</x-nav-link>
+                <x-nav-link to="admin.tags.index">Tags</x-nav-link>
+            @endif
+            <form method="POST" action="{{ route('logout') }}" class="ml-auto">
+                @csrf
+                <button type="submit" class="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">Déconnexion</button>
+            </form>
+        @else
+            <x-nav-link to="login">Connexion</x-nav-link>
+            <x-nav-link to="register">Inscription</x-nav-link>
+        @endauth
     </nav>
 </header>

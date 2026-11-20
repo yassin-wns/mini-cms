@@ -10,6 +10,11 @@
     <x-navbar />
 
     <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
+        @if (session('success'))
+            <div class="mb-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-green-800">
+                {{ session('success') }}
+            </div>
+        @endif
         {{ $slot }}
     </main>
 

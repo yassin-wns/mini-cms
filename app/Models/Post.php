@@ -21,6 +21,7 @@ class Post extends Model
         'is_published',
         'published_at',
         'category_id',
+        'user_id',
     ];
 
     protected function casts(): array
@@ -49,5 +50,19 @@ class Post extends Model
     public function scopePublished(Builder $query): void
     {
         $query->where('is_published', true);
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): void
+    {
+        if ($user?->isAdmin()) {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($user) {
+            $query->where('is_published', true);
+            if ($user) {
+                $query->orWhere('user_id', $user->id);
+            }
+        });
     }
 }
