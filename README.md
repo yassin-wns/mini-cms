@@ -4,118 +4,152 @@ Projet fil rouge de l'Atelier Framework Côté Serveur (Laravel 13, PHP 8.3+), 3
 
 Auteur : Yassin Wannassi, groupe MDW32.
 
-Mini-CMS évoluera au fil du semestre vers une petite plateforme de publication : pages publiques, back-office authentifié, API JSON et tests Pest. Chaque session se termine par un tag Git (`lab-01`, `lab-01b`, puis un tag par session).
+## Description
 
-## État actuel (tag lab-04)
+Mini-CMS est une plateforme de publication avec un site public, un back-office authentifié et une API JSON. Les utilisateurs rédigent des articles associés à une catégorie et à des tags. L'API expose les contenus publiés en lecture et réserve les écritures aux clients munis d'un jeton Sanctum.
 
-- Modèles `Category` et `Tag` reliés à `Post` : un article a une catégorie et un auteur (1:N) et plusieurs tags (N:N, table pivot `post_tag`).
-- Fabriques `PostFactory` (état `published()`), `CategoryFactory`, `TagFactory` et seeders pour un jeu de données réaliste.
-- Chargement anticipé avec `with()` ; `Model::preventLazyLoading()` signale tout problème N+1 hors production.
-- Tests Pest : `PostPagesTest`, `PostWriteTest` et `PostRelationsTest`.
+## Fonctionnalités
 
-## Données de démonstration
-
-Après un clone, reconstruire la base avec `php artisan migrate:fresh --seed`. Attention : cette commande vide la base avant de la remplir.
-
-## Routes disponibles
-
-| Méthode | URI | Nom | Action |
-|---|---|---|---|
-| GET | `/` | `home` | `PageController@home` |
-| GET | `/a-propos` | `about` | `PageController@about` |
-| GET | `/heure` | `time` | `PageController@time` |
-| GET | `/posts` | `posts.index` | `PostController@index` |
-| GET | `/posts/archive/{year}` | `posts.archive` | `PostController@archive` |
-| GET | `/posts/create` | `posts.create` | `PostController@create` |
-| POST | `/posts` | `posts.store` | `PostController@store` |
-| GET | `/posts/{post}` | `posts.show` | `PostController@show` |
-| GET | `/posts/{post}/edit` | `posts.edit` | `PostController@edit` |
-| PUT | `/posts/{post}` | `posts.update` | `PostController@update` |
-| DELETE | `/posts/{post}` | `posts.destroy` | `PostController@destroy` |
-| PATCH | `/posts/{post}/publication` | `posts.publication` | `PostController@togglePublication` |
-
-## Prérequis
-
-- PHP et Composer (PHP 8.3 ou plus depuis https://www.php.net/downloads, avec les extensions curl, fileinfo, mbstring, openssl, pdo_sqlite, sqlite3 et zip activées dans php.ini, et Composer depuis https://getcomposer.org).
-- Node.js LTS et npm.
-- Git.
+- Pages d'accueil, À propos et heure.
+- Liste paginée, archives annuelles, détail et articles associés.
+- Création, modification, suppression et publication d'articles selon le propriétaire et les permissions administrateur.
+- Gestion des catégories et des tags par les administrateurs.
+- Inscription et connexion par session pour le site.
+- API JSON avec lecture des articles, catégories et tags, et filtres par catégorie ou tag.
+- Connexion API par jeton Bearer Sanctum et opérations d'écriture protégées.
+- Relations Eloquent, chargement anticipé, données de démonstration et tests Pest.
 
 ## Installation
 
-### Bash (Git Bash, macOS, Linux)
+Prérequis : PHP 8.3 ou plus avec `pdo_sqlite`, Composer, Node.js LTS et Git.
+
+### Bash
 
 ```bash
 git clone https://github.com/yassin-wns/mini-cms.git
 cd mini-cms
 composer install
 npm install
+npm run build
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite
-php artisan migrate
+php artisan migrate:fresh --seed
+php artisan test
 composer run dev
 ```
 
-### PowerShell (Windows)
+### PowerShell
 
 ```powershell
 git clone https://github.com/yassin-wns/mini-cms.git
 cd mini-cms
 composer install
 npm install
+npm run build
 copy .env.example .env
 php artisan key:generate
-New-Item database\database.sqlite -ItemType File
-php artisan migrate
-php artisan serve
+php artisan migrate:fresh --seed
+php artisan test
+composer run dev
 ```
 
-Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l'adresse de Vite sur le port 5173).
+Ouvrir ensuite http://localhost:8000. `migrate:fresh --seed` recrée la base SQLite et efface les données locales existantes.
 
-## Captures d'écran
+## Comptes de test
 
-### Page d'accueil
+La base de démonstration contient le compte administrateur suivant :
 
-![Page d'accueil de Mini-CMS](screenshots/s01-accueil.png)
+| E-mail | Mot de passe | Rôle |
+|---|---|---|
+| `test@example.com` | `password` | administrateur |
 
-### Liste des routes
+Les autres comptes générés par les factories ont également le mot de passe `password`.
 
-![Sortie de php artisan route:list](screenshots/s01-route-list.png)
+## API
 
-### Page À propos
+Les réponses de collections paginées ont les clés `data`, `links` et `meta`. Les listes de catégories et de tags renvoient `data` avec le nombre d'articles publiés. Les erreurs de validation sont des réponses JSON `422`.
 
-![Page À propos](screenshots/s02-a-propos.png)
+### Endpoints
 
-### Accueil avec le layout
+| Méthode | URI | Authentification | Résultat |
+|---|---|---|---|
+| GET | `/api/posts` | publique | Articles publiés, paginés (5 par défaut) |
+| GET | `/api/posts?category=<slug>` | publique | Filtre par slug de catégorie |
+| GET | `/api/posts?tag=<slug>` | publique | Filtre par slug de tag |
+| GET | `/api/posts/{post}` | publique ou propriétaire | Détail d'un article publié ou détenu |
+| GET | `/api/categories` | publique | Catégories et compte des articles publiés |
+| GET | `/api/categories/{category}` | publique | Détail d'une catégorie |
+| GET | `/api/tags` | publique | Tags et compte des articles publiés |
+| GET | `/api/tags/{tag}` | publique | Détail d'un tag |
+| POST | `/api/login` | publique | Émet un jeton Sanctum |
+| GET | `/api/user` | Bearer | Profil associé au jeton |
+| POST | `/api/logout` | Bearer | Révoque le jeton courant |
+| POST | `/api/posts` | Bearer | Crée un article appartenant à l'utilisateur |
+| PUT | `/api/posts/{post}` | Bearer et Policy | Remplace un article appartenant à l'utilisateur |
+| DELETE | `/api/posts/{post}` | Bearer et Policy | Supprime un article appartenant à l'utilisateur |
 
-![Page d'accueil avec le layout](screenshots/s03-accueil.png)
+Les filtres `category`, `tag` et `per_page` sont validés. `per_page` accepte une valeur de 1 à 50.
 
-### Liste des articles
+### Authentification par jeton
 
-![Liste des articles](screenshots/s03-articles.png)
+Envoyer `POST /api/login` avec `Accept: application/json` et le corps JSON `{"email":"test@example.com","password":"password"}`. La réponse `201` contient un jeton en clair, affiché une seule fois. La base ne conserve que son empreinte.
 
-### Détail d'un article
+Pour les routes protégées, envoyer `Authorization: Bearer <jeton>` et `Accept: application/json`. `POST /api/logout` supprime uniquement le jeton présenté.
 
-![Détail d'un article](screenshots/s03-article.png)
+Les créations/modifications acceptent les champs `title`, `slug`, `excerpt`, `body`, `is_published`, `category_id` et `tags` (tableau d'identifiants). Les articles créés appartiennent à l'utilisateur authentifié. Une modification ou suppression est permise à son propriétaire ou à un administrateur, selon la `PostPolicy`.
 
-### Session 04
+### Codes d'erreur
 
-![Liste des articles](screenshots/s04-articles.png)
+- `200` : lecture ou modification réussie.
+- `201` : connexion avec jeton émis ou article créé.
+- `204` : déconnexion ou suppression réussie, sans corps.
+- `401` : jeton absent, invalide ou révoqué.
+- `403` : action refusée par la `PostPolicy`.
+- `404` : article, catégorie ou tag inexistant.
+- `403` : article existant non accessible ou opération interdite par la `PostPolicy`.
+- `422` : données invalides ou identifiants de connexion incorrects.
 
-### Session 05
+### Exemple curl.exe
 
-![Liste paginée des articles](screenshots/s05-articles.png)
+Dans PowerShell, récupérer le jeton puis remplacer `VOTRE_JETON` dans la requête protégée :
+
+```powershell
+$login = curl.exe -s -X POST -H "Accept: application/json" -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"password"}' http://localhost:8000/api/login | ConvertFrom-Json
+$token = $login.token
+curl.exe -H "Accept: application/json" -H "Authorization: Bearer $token" "http://localhost:8000/api/posts?per_page=2"
+curl.exe -X POST -H "Accept: application/json" -H "Authorization: Bearer $token" http://localhost:8000/api/logout
+```
+
+### Captures d'écran
+
+#### Accueil et navigation
+
+![Page d'accueil](screenshots/s03-accueil.png)
+
+#### Liste des articles et relations
+
+![Articles, catégorie, auteur et tags](screenshots/s07-liste-relations.png)
+
+#### Détail d'un article et articles associés
+
+![Détail d'un article](screenshots/s07-detail-tags.png)
+
+#### Formulaires
 
 ![Formulaire avec erreurs de validation](screenshots/s05-formulaire.png)
 
-### Session 06
+![Modification d'un article](screenshots/s06-modification.png)
 
-![Formulaire de modification prérempli](screenshots/s06-modification.png)
+## Choix d'architecture
 
-![Confirmation de suppression](screenshots/s06-suppression.png)
+### Pourquoi les écritures de l'API passent par PostPolicy
 
-### Session 07
+Le site et l'API doivent appliquer la même règle de propriété. Les deux contrôleurs demandent donc à `PostPolicy` si la personne connectée peut modifier ou supprimer l'article; une règle ne peut ainsi pas être contournée en utilisant l'API plutôt que le formulaire.
 
-![Liste des articles avec leur catégorie, leur auteur et leurs tags](screenshots/s07-liste-relations.png)
+### Pourquoi preventLazyLoading est activé
 
-![Page d'un article avec ses tags et les articles de la même catégorie](screenshots/s07-detail-tags.png)
+Les vues et les Resources lisent les auteurs, catégories et tags des articles. Sans chargement anticipé, parcourir une liste pourrait lancer une requête supplémentaire par article. `preventLazyLoading` rend cet oubli visible hors production, tandis que `with()` regroupe les lectures nécessaires.
+
+### Pourquoi l'API utilise des jetons et non la session
+
+Un client API tel que Postman ou une application mobile n'utilise pas la session web du navigateur. Il envoie un jeton Bearer à chaque requête protégée. Sanctum ne conserve en base que l'empreinte du jeton et permet de révoquer celui utilisé pour la déconnexion sans invalider les autres appareils.

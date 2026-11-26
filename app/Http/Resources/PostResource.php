@@ -38,6 +38,7 @@ class PostResource extends JsonResource
                 'name' => $tag->name,
                 'slug' => $tag->slug,
             ])),
+            'url' => route('posts.show', $this->resource),
         ];
     }
 }
